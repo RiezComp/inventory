@@ -152,7 +152,7 @@ db.serialize(() => {
           if (err) {
             console.error("Error creating default admin:", err.message);
           } else {
-            console.log("✅ Default admin user created (username: admin, password: admin123)");
+            console.log("✅ Default admin user created (username: admin, password: admin@460507)");
           }
         }
       );
