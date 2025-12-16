@@ -14,6 +14,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
     });
     const [imageFile, setImageFile] = useState(null);
     const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+    const [itemType, setItemType] = useState('consumable');
 
     useEffect(() => {
         if (item) {
