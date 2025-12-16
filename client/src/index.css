@@ -152,6 +152,16 @@ a:hover {
   background-color: var(--bg-hover);
 }
 
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
 /* Forms */
 .form-group {
   margin-bottom: 1rem;
