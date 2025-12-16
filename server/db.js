@@ -45,6 +45,7 @@ db.serialize(() => {
       const hasPartNumber = rows.some(r => r.name === 'part_number');
       const hasFootprint = rows.some(r => r.name === 'footprint');
       const hasDatasheetUrl = rows.some(r => r.name === 'datasheet_url');
+      const hasItemType = rows.some(r => r.name === 'item_type');
 
       if (!hasImagePath) {
         db.run("ALTER TABLE items ADD COLUMN image_path TEXT", (err) => {
@@ -68,6 +69,12 @@ db.serialize(() => {
         db.run("ALTER TABLE items ADD COLUMN datasheet_url TEXT", (err) => {
           if (err) console.error("Error adding datasheet_url column:", err.message);
           else console.log("Added datasheet_url column to items table.");
+        });
+      }
+      if (!hasItemType) {
+        db.run("ALTER TABLE items ADD COLUMN item_type TEXT DEFAULT 'consumable'", (err) => {
+          if (err) console.error("Error adding item_type column:", err.message);
+          else console.log("Added item_type column to items table.");
         });
       }
     }
