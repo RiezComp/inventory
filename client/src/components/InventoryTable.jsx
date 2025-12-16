@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
-const API_Base = 'http://localhost:3000'; // Need for image URLs
+const API_Base = ''; // Need for image URLs
 
 export default function InventoryTable({ items, onInteract }) {
     const [search, setSearch] = useState('');

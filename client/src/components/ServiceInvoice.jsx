@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 
-const API_Base = 'http://localhost:3000/api';
+const API_Base = '/api';
 
 export default function ServiceInvoice({ isOpen, onClose, serviceId }) {
     const [service, setService] = useState(null);

@@ -9,7 +9,7 @@ export default function TransactionHistory() {
     useEffect(() => {
         if (!token) return;
 
-        fetch('http://localhost:3000/api/history', {
+        fetch('/api/history', {
             headers: { 'Authorization': `Bearer ${token}` }
         })
             .then(res => res.json())

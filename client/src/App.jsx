@@ -11,7 +11,7 @@ import ServiceModal from './components/ServiceModal';
 import ServiceDetail from './components/ServiceDetail';
 import ServiceInvoice from './components/ServiceInvoice';
 
-const API_Base = 'http://localhost:3000/api';
+const API_Base = '/api';
 
 function AppContent() {
     const { user, token, logout, loading } = useAuth();

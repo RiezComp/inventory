@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 
-const API_Base = 'http://localhost:3000/api';
+const API_Base = '/api';
 
 const STATUS_COLORS = {
     pending: { bg: 'rgba(156, 163, 175, 0.2)', color: '#9ca3af' },
