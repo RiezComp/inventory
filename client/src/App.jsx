@@ -167,7 +167,7 @@ function AppContent() {
         <div className="container">
             <header className="flex justify-between items-center mb-4" style={{ marginTop: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Inventory Control</h1>
+                    <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Inventory System</h1>
                     <p className="text-muted">
                         Welcome, <strong>{user.full_name || user.username}</strong>
                         {user.role === 'admin' && <span className="badge" style={{ marginLeft: '0.5rem', backgroundColor: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary)' }}>Admin</span>}
