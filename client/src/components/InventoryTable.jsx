@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 
 const API_Base = ''; // Need for image URLs
 
-export default function InventoryTable({ items, onInteract }) {
+export default function InventoryTable({ items, onInteract, onDelete }) {
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [viewImageUrl, setViewImageUrl] = useState(null);
@@ -168,6 +168,20 @@ export default function InventoryTable({ items, onInteract }) {
                                                     disabled={item.total_qty === 0}
                                                 >
                                                     - Use
+                                                </button>
+                                                <button
+                                                    className="btn"
+                                                    style={{
+                                                        padding: '0.25rem 0.5rem',
+                                                        fontSize: '0.75rem',
+                                                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                                        color: 'var(--error)',
+                                                        border: '1px solid var(--error)'
+                                                    }}
+                                                    onClick={() => onDelete(item.id)}
+                                                    title="Delete Item"
+                                                >
+                                                    🗑️
                                                 </button>
                                             </div>
                                         </td>

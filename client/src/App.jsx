@@ -92,6 +92,28 @@ function AppContent() {
         }
     };
 
+    const handleDelete = async (itemId) => {
+        if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) return;
+
+        try {
+            const res = await fetch(`${API_Base}/inventory/${itemId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const result = await res.json();
+
+            if (res.ok) {
+                fetchInventory();
+            } else {
+                alert("Error: " + result.error);
+            }
+        } catch (err) {
+            alert("Network Error: " + err.message);
+        }
+    };
+
     if (loading) {
         return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
     }
@@ -156,7 +178,7 @@ function AppContent() {
                 ) : (
                     <>
                         <DashboardStats items={items} />
-                        <InventoryTable items={items} onInteract={handleInteract} />
+                        <InventoryTable items={items} onInteract={handleInteract} onDelete={handleDelete} />
                     </>
                 )
             ) : currentView === 'history' ? (

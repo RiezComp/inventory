@@ -269,6 +269,26 @@ app.post('/api/inventory/out', authMiddleware, (req, res) => {
     });
 });
 
+// Delete inventory item
+app.delete('/api/inventory/:id', authMiddleware, (req, res) => {
+    const { id } = req.params;
+
+    // Delete transactions first (referential integrity usually handled by DB, but good to be explicit or safe)
+    db.run('DELETE FROM transactions WHERE item_id = ?', [id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        db.run('DELETE FROM service_parts_used WHERE item_id = ?', [id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // Delete item
+            db.run('DELETE FROM items WHERE id = ?', [id], function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: 'Item deleted' });
+            });
+        });
+    });
+});
+
 // Get transaction history with username
 app.get('/api/history', authMiddleware, (req, res) => {
     const sql = `
