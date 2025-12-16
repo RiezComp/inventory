@@ -56,12 +56,26 @@ export default function TransactionHistory() {
                                         {new Date(t.timestamp).toLocaleString()}
                                     </td>
                                     <td>
-                                        <span className={`badge ${t.type === 'IN' ? 'badge-in' : 'badge-out'}`}>
-                                            {t.type}
+                                        <span
+                                            className="badge"
+                                            style={{
+                                                backgroundColor:
+                                                    t.type === 'IN' ? 'rgba(16, 185, 129, 0.2)' :
+                                                        t.type === 'OUT' ? 'rgba(239, 68, 68, 0.2)' :
+                                                            'rgba(59, 130, 246, 0.2)',
+                                                color:
+                                                    t.type === 'IN' ? 'var(--success)' :
+                                                        t.type === 'OUT' ? 'var(--error)' :
+                                                            '#60a5fa'
+                                            }}
+                                        >
+                                            {t.type === 'IN' ? 'IN' : t.type === 'OUT' ? 'OUT' : 'MOVE'}
                                         </span>
                                     </td>
                                     <td style={{ fontWeight: 500 }}>{t.item_name}</td>
-                                    <td>{t.qty}</td>
+                                    <td>
+                                        {t.type === 'MOVE' ? '-' : t.qty}
+                                    </td>
                                     <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                         {t.username || 'Unknown'}
                                     </td>

@@ -269,6 +269,35 @@ app.post('/api/inventory/out', authMiddleware, (req, res) => {
     });
 });
 
+// Move item (Location Change)
+app.post('/api/inventory/move', authMiddleware, (req, res) => {
+    const { item_id, new_location, project_ref, notes } = req.body;
+    const user_id = req.user.id;
+
+    if (!item_id || !new_location) {
+        return res.status(400).json({ error: 'Item ID and New Location are required' });
+    }
+
+    db.get('SELECT * FROM items WHERE id = ?', [item_id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ error: 'Item not found' });
+
+        const old_location = row.location || 'Unknown';
+        const timestamp = new Date().toISOString();
+        const moveNotes = `Moved from ${old_location} to ${new_location}. ${notes || ''}`;
+
+        db.run('UPDATE items SET location = ? WHERE id = ?', [new_location, item_id], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // Log transaction with user_id
+            db.run('INSERT INTO transactions (item_id, user_id, type, qty, project_ref, timestamp, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [item_id, user_id, 'MOVE', 0, project_ref, timestamp, moveNotes]);
+
+            res.json({ message: 'Item moved', itemId: item_id, newLocation: new_location });
+        });
+    });
+});
+
 // Delete inventory item
 app.delete('/api/inventory/:id', authMiddleware, (req, res) => {
     const { id } = req.params;

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 
 const API_Base = ''; // Need for image URLs
 
-export default function InventoryTable({ items, onInteract, onDelete }) {
+export default function InventoryTable({ items, onInteract, onDelete, onMove }) {
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [viewImageUrl, setViewImageUrl] = useState(null);
@@ -168,6 +168,14 @@ export default function InventoryTable({ items, onInteract, onDelete }) {
                                                     disabled={item.total_qty === 0}
                                                 >
                                                     - Use
+                                                </button>
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}
+                                                    onClick={() => onMove(item)}
+                                                    title="Move Location"
+                                                >
+                                                    ↔️
                                                 </button>
                                                 <button
                                                     className="btn"

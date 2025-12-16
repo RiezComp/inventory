@@ -11,6 +11,7 @@ import ServiceModal from './components/ServiceModal';
 import ServiceDetail from './components/ServiceDetail';
 import ServiceInvoice from './components/ServiceInvoice';
 import PasswordConfirmModal from './components/PasswordConfirmModal';
+import MoveModal from './components/MoveModal';
 
 const API_Base = '/api';
 
@@ -30,6 +31,8 @@ function AppContent() {
     const [invoiceServiceId, setInvoiceServiceId] = useState(null);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [moveModalOpen, setMoveModalOpen] = useState(false);
+    const [itemToMove, setItemToMove] = useState(null);
 
     const fetchInventory = async () => {
         if (!token) return;
@@ -98,6 +101,34 @@ function AppContent() {
     const handleDelete = (itemId) => {
         setItemToDelete(itemId);
         setDeleteModalOpen(true);
+    };
+
+    const handleMove = (item) => {
+        setItemToMove(item);
+        setMoveModalOpen(true);
+    };
+
+    const handleMoveSubmit = async (moveData) => {
+        try {
+            const res = await fetch(`${API_Base}/inventory/move`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(moveData)
+            });
+            const result = await res.json();
+
+            if (res.ok) {
+                setMoveModalOpen(false);
+                fetchInventory();
+            } else {
+                alert("Error: " + result.error);
+            }
+        } catch (err) {
+            alert("Network Error: " + err.message);
+        }
     };
 
     const handleConfirmDelete = async (password) => {
@@ -188,7 +219,7 @@ function AppContent() {
                 ) : (
                     <>
                         <DashboardStats items={items} />
-                        <InventoryTable items={items} onInteract={handleInteract} onDelete={handleDelete} />
+                        <InventoryTable items={items} onInteract={handleInteract} onDelete={handleDelete} onMove={handleMove} />
                     </>
                 )
             ) : currentView === 'history' ? (
@@ -271,6 +302,16 @@ function AppContent() {
                 onConfirm={handleConfirmDelete}
                 title="Delete Component"
                 message="This action cannot be undone. All transaction history for this item will be lost. Please enter your password to confirm."
+            />
+
+            <MoveModal
+                isOpen={moveModalOpen}
+                onClose={() => {
+                    setMoveModalOpen(false);
+                    setItemToMove(null);
+                }}
+                item={itemToMove}
+                onSubmit={handleMoveSubmit}
             />
         </div>
     );
