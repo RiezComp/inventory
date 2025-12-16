@@ -110,9 +110,9 @@ export default function ServiceInvoice({ isOpen, onClose, serviceId }) {
                                 SERVICE INVOICE
                             </h1>
                             <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                                <div>Your Company Name</div>
-                                <div>Address Line 1, City, Postal Code</div>
-                                <div>Phone: +62 xxx-xxxx-xxxx | Email: info@company.com</div>
+                                <div>R&D Div</div>
+                                <div>PT. Surya Utama Putra</div>
+                                <div>Phone: +62 xxx-xxxx-xxxx | Email: </div>
                             </div>
                         </div>
 
@@ -196,9 +196,9 @@ export default function ServiceInvoice({ isOpen, onClose, serviceId }) {
                                 <h3 style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#666', marginBottom: '0.5rem' }}>
                                     PARTS USED
                                 </h3>
-                                <table style={{ width: '100%', fontSize: '0.85rem', border: '1px solid #000', borderCollapse: 'collapse' }}>
+                                <table style={{ width: '100%', fontSize: '0.85rem', border: '1px solid #666', borderCollapse: 'collapse' }}>
                                     <thead>
-                                        <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #000' }}>
+                                        <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #666' }}>
                                             <th style={{ padding: '0.5rem', textAlign: 'left', borderRight: '1px solid #ddd' }}>Item</th>
                                             <th style={{ padding: '0.5rem', textAlign: 'left', borderRight: '1px solid #ddd' }}>Part Number</th>
                                             <th style={{ padding: '0.5rem', textAlign: 'right' }}>Qty</th>
