@@ -10,6 +10,7 @@ import ServiceList from './components/ServiceList';
 import ServiceModal from './components/ServiceModal';
 import ServiceDetail from './components/ServiceDetail';
 import ServiceInvoice from './components/ServiceInvoice';
+import PasswordConfirmModal from './components/PasswordConfirmModal';
 
 const API_Base = '/api';
 
@@ -27,6 +28,8 @@ function AppContent() {
     const [selectedServiceId, setSelectedServiceId] = useState(null);
     const [invoiceOpen, setInvoiceOpen] = useState(false);
     const [invoiceServiceId, setInvoiceServiceId] = useState(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
     const fetchInventory = async () => {
         if (!token) return;
@@ -92,19 +95,26 @@ function AppContent() {
         }
     };
 
-    const handleDelete = async (itemId) => {
-        if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) return;
+    const handleDelete = (itemId) => {
+        setItemToDelete(itemId);
+        setDeleteModalOpen(true);
+    };
 
+    const handleConfirmDelete = async (password) => {
         try {
-            const res = await fetch(`${API_Base}/inventory/${itemId}`, {
+            const res = await fetch(`${API_Base}/inventory/${itemToDelete}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password })
             });
             const result = await res.json();
 
             if (res.ok) {
+                setDeleteModalOpen(false);
+                setItemToDelete(null);
                 fetchInventory();
             } else {
                 alert("Error: " + result.error);
@@ -250,6 +260,17 @@ function AppContent() {
                     setInvoiceServiceId(null);
                 }}
                 serviceId={invoiceServiceId}
+            />
+
+            <PasswordConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setItemToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Delete Component"
+                message="This action cannot be undone. All transaction history for this item will be lost. Please enter your password to confirm."
             />
         </div>
     );

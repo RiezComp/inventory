@@ -272,18 +272,36 @@ app.post('/api/inventory/out', authMiddleware, (req, res) => {
 // Delete inventory item
 app.delete('/api/inventory/:id', authMiddleware, (req, res) => {
     const { id } = req.params;
+    const { password } = req.body;
+    const user_id = req.user.id;
 
-    // Delete transactions first (referential integrity usually handled by DB, but good to be explicit or safe)
-    db.run('DELETE FROM transactions WHERE item_id = ?', [id], (err) => {
+    if (!password) {
+        return res.status(400).json({ error: 'Password required' });
+    }
+
+    // Verify password first
+    db.get('SELECT password FROM users WHERE id = ?', [user_id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(404).json({ error: 'User not found' });
 
-        db.run('DELETE FROM service_parts_used WHERE item_id = ?', [id], (err) => {
+        const isValid = bcrypt.compareSync(password, user.password);
+        if (!isValid) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+
+        // Proceed with delete
+        // Delete transactions first (referential integrity usually handled by DB, but good to be explicit or safe)
+        db.run('DELETE FROM transactions WHERE item_id = ?', [id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
 
-            // Delete item
-            db.run('DELETE FROM items WHERE id = ?', [id], function (err) {
+            db.run('DELETE FROM service_parts_used WHERE item_id = ?', [id], (err) => {
                 if (err) return res.status(500).json({ error: err.message });
-                res.json({ message: 'Item deleted' });
+
+                // Delete item
+                db.run('DELETE FROM items WHERE id = ?', [id], function (err) {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ message: 'Item deleted' });
+                });
             });
         });
     });
