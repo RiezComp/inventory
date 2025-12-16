@@ -130,7 +130,7 @@ export default function ServiceModal({ isOpen, onClose, service, onSuccess }) {
                                 className="input"
                                 value={formData.item_name}
                                 onChange={e => setFormData({ ...formData, item_name: e.target.value })}
-                                placeholder="e.g. Laptop Dell Latitude"
+                                placeholder="e.g. Product Name"
                             />
                         </div>
                         <div className="form-group" style={{ flex: 1 }}>
