@@ -201,7 +201,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                                     top: '100%',
                                     left: 0,
                                     right: 0,
-                                    backgroundColor: 'var(--bg-card)',
+                                    backgroundColor: 'var(--bg-panel)',
                                     border: '1px solid var(--border)',
                                     borderRadius: 'var(--radius)',
                                     maxHeight: '150px',
@@ -221,7 +221,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                                             }}
                                             onMouseDown={() => handleCategorySelect(cat)}
                                             onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-input)'}
-                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'var(--bg-card)'}
+                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                                         >
                                             {cat}
                                         </div>
