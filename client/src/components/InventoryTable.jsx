@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useAuth } from '../AuthContext';
 
 const API_Base = ''; // Need for image URLs
 
 export default function InventoryTable({ items, onInteract, onDelete, onMove, viewType }) {
+    const { token } = useAuth();
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [viewImageUrl, setViewImageUrl] = useState(null);
@@ -31,6 +33,63 @@ export default function InventoryTable({ items, onInteract, onDelete, onMove, vi
             <div className="card">
                 <div className="card-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
                     <h3 className="card-title" style={{ color: 'var(--text-primary)', marginRight: 'auto' }}>Inventory List</h3>
+
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => {
+                            fetch('/api/inventory/export', {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            })
+                                .then(res => res.blob())
+                                .then(blob => {
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `inventory_export_${new Date().toISOString().split('T')[0]}.csv`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    window.URL.revokeObjectURL(url);
+                                    a.remove();
+                                })
+                                .catch(err => alert("Export failed: " + err.message));
+                        }}
+                    >
+                        📥 Export CSV
+                    </button>
+
+                    <button
+                        className="btn btn-secondary"
+                        style={{ padding: '0.5rem 1rem' }}
+                        onClick={() => {
+                            // We need token here. Since InventoryTable doesn't have token prop, we can get it from localStorage or pass it.
+                            // Assuming simplest way is passing token or using localStorage since AuthContext might not be easily accessible if not passed.
+                            // Better: use window.location or similar if we want to avoid props drilling, BUT correct way is AuthContext. 
+                            // InventoryTable is inside App component which has AuthProvider.
+                            // Let's assume we can get token from localStorage 'token' if it was stored there, OR better, let the parent handle export?
+                            // No, let's just use the API with the stored token if available. 
+                            // Wait, InventoryTable is a child of AppContent which uses useAuth.
+                            // I should pass token as prop OR simply read from localStorage 'site_token' if your auth saves it there?
+                            // Checking AuthContext... standard is often inside memory.
+                            // App.jsx passes items. I should modify App.jsx to pass token? No, let's try to fetch using the same method as App.jsx.
+                            // Actually, I can accept a new prop 'onExport' from parent.
+
+                            // Let's modify to use a callback prop 'onExport' and implement handler it in App.jsx? 
+                            // No, user wants me to edit specific files.
+                            // Let's try to fetch directly using localStorage.getItem('token') purely as a fallback 
+                            // OR just pass auth token to InventoryTable.
+                            // Inspecting App.jsx again... it has `token`.
+                            // I will use localStorage.getItem('token') as a quick fix if consistent, 
+                            // OR I can use the existing 'API_Base' and assume headers are handled? No, 'API_Base' is empty string.
+
+                            // Let's assume onInteract is for modifying items.
+                            // Since I cannot rewrite App.jsx to pass token easily without potentially breaking things if I miss something,
+                            // I will implement the button here but the logic might need the token.
+                            // Ah, I can import useAuth! InventoryTable is a component inside AuthProvider.
+                            // Let's import useAuth.
+                        }}
+                    >
+                    </button>
+                    {/* Wait, I should rewrite the component start to import useAuth and get token */}
 
                     <select
                         className="select"

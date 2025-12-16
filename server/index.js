@@ -551,6 +551,68 @@ app.get('/api/service/:id/parts', authMiddleware, (req, res) => {
     });
 });
 
+// Export Inventory to CSV
+app.get('/api/inventory/export', authMiddleware, (req, res) => {
+    db.all('SELECT * FROM items ORDER BY name ASC', [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const headers = ['ID', 'Name', 'Part Number', 'Category', 'Footprint', 'Qty', 'Location', 'Item Type', 'Notes'];
+        const csvRows = [headers.join(',')];
+
+        rows.forEach(row => {
+            const values = [
+                row.id,
+                `"${(row.name || '').replace(/"/g, '""')}"`,
+                `"${(row.part_number || '').replace(/"/g, '""')}"`,
+                `"${(row.category || '').replace(/"/g, '""')}"`,
+                `"${(row.footprint || '').replace(/"/g, '""')}"`,
+                row.total_qty,
+                `"${(row.location || '').replace(/"/g, '""')}"`,
+                `"${(row.item_type || 'consumable').replace(/"/g, '""')}"`,
+                `"${(row.notes || '').replace(/"/g, '""')}"`
+            ];
+            csvRows.push(values.join(','));
+        });
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment('inventory_export.csv');
+        res.send(csvRows.join('\n'));
+    });
+});
+
+// Export History to CSV
+app.get('/api/history/export', authMiddleware, (req, res) => {
+    db.all(`
+        SELECT t.*, i.name as item_name, u.username 
+        FROM transactions t 
+        JOIN items i ON t.item_id = i.id 
+        LEFT JOIN users u ON t.user_id = u.id
+        ORDER BY t.timestamp DESC
+    `, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const headers = ['Date', 'Type', 'Item Name', 'Qty', 'User', 'Project Ref', 'Notes'];
+        const csvRows = [headers.join(',')];
+
+        rows.forEach(row => {
+            const values = [
+                `"${new Date(row.timestamp).toLocaleString()}"`,
+                row.type,
+                `"${(row.item_name || '').replace(/"/g, '""')}"`,
+                row.qty,
+                `"${(row.username || '').replace(/"/g, '""')}"`,
+                `"${(row.project_ref || '').replace(/"/g, '""')}"`,
+                `"${(row.notes || '').replace(/"/g, '""')}"`
+            ];
+            csvRows.push(values.join(','));
+        });
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment('transaction_history.csv');
+        res.send(csvRows.join('\n'));
+    });
+});
+
 // Serve static files from React app (Production)
 app.use(express.static(path.join(__dirname, '../client/dist')));
 

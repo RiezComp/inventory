@@ -29,6 +29,28 @@ export default function TransactionHistory() {
         <div className="card">
             <div className="card-header">
                 <h3 className="card-title" style={{ color: 'var(--text-primary)' }}>Transaction History</h3>
+                <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                        fetch('/api/history/export', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        })
+                            .then(res => res.blob())
+                            .then(blob => {
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `history_export_${new Date().toISOString().split('T')[0]}.csv`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                a.remove();
+                            })
+                            .catch(alert);
+                    }}
+                >
+                    📥 Export CSV
+                </button>
             </div>
 
             <div className="table-container">
