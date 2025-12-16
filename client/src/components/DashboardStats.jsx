@@ -9,14 +9,14 @@ export default function DashboardStats({ items }) {
         <div className="dashboard-grid">
             <div className="card">
                 <div className="card-header">
-                    <span className="card-title">Unique Components</span>
+                    <span className="card-title">Number of Items</span>
                 </div>
                 <div className="card-value">{totalItems}</div>
             </div>
 
             <div className="card">
                 <div className="card-header">
-                    <span className="card-title">Total Parts in RAM</span>
+                    <span className="card-title">Total of Items</span>
                 </div>
                 <div className="card-value">{totalStockCount}</div>
             </div>
