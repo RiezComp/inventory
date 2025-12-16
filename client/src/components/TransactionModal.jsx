@@ -127,7 +127,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                                 className="input"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="e.g. ESP32 DevKit V1"
+                                placeholder="e.g. Resistor"
                             />
                         </div>
                     )}
@@ -140,7 +140,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                                     className="input"
                                     value={formData.part_number}
                                     onChange={e => setFormData({ ...formData, part_number: e.target.value })}
-                                    placeholder="e.g. ESP32-WROOM-32"
+                                    placeholder="e.g. Part Number / SN"
                                 />
                             </div>
                             <div className="form-group" style={{ flex: 1 }}>
@@ -221,7 +221,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                                             }}
                                             onMouseDown={() => handleCategorySelect(cat)}
                                             onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-input)'}
-                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'var(--bg-card)'}
                                         >
                                             {cat}
                                         </div>
@@ -266,7 +266,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                             className="input"
                             value={formData.project_ref}
                             onChange={e => setFormData({ ...formData, project_ref: e.target.value })}
-                            placeholder={type === 'IN' ? "e.g. Mouser Order #123" : "e.g. Smart Home Project"}
+                            placeholder={type === 'IN' ? "e.g. Number Order #123" : "e.g. Project Name"}
                         />
                     </div>
 
