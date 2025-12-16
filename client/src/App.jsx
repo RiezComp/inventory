@@ -182,6 +182,13 @@ function AppContent() {
                         Inventory
                     </button>
                     <button
+                        className={`btn ${currentView === 'assets' ? 'btn-secondary' : 'btn-ghost'}`}
+                        style={{ backgroundColor: currentView === 'assets' ? 'var(--bg-input)' : 'transparent' }}
+                        onClick={() => setCurrentView('assets')}
+                    >
+                        Assets
+                    </button>
+                    <button
                         className={`btn ${currentView === 'history' ? 'btn-secondary' : 'btn-ghost'}`}
                         style={{ backgroundColor: currentView === 'history' ? 'var(--bg-input)' : 'transparent' }}
                         onClick={() => setCurrentView('history')}
@@ -213,13 +220,22 @@ function AppContent() {
                 </div>
             </header>
 
-            {currentView === 'inventory' ? (
+            {currentView === 'inventory' || currentView === 'assets' ? (
                 dataLoading ? (
                     <div className="text-muted">Loading inventory...</div>
                 ) : (
                     <>
                         <DashboardStats items={items} />
-                        <InventoryTable items={items} onInteract={handleInteract} onDelete={handleDelete} onMove={handleMove} />
+                        <InventoryTable
+                            items={items.filter(i => {
+                                const isAsset = i.item_type === 'asset';
+                                return currentView === 'assets' ? isAsset : !isAsset;
+                            })}
+                            onInteract={handleInteract}
+                            onDelete={handleDelete}
+                            onMove={handleMove}
+                            viewType={currentView}
+                        />
                     </>
                 )
             ) : currentView === 'history' ? (

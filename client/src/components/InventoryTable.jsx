@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 
 const API_Base = ''; // Need for image URLs
 
-export default function InventoryTable({ items, onInteract, onDelete, onMove }) {
+export default function InventoryTable({ items, onInteract, onDelete, onMove, viewType }) {
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [viewImageUrl, setViewImageUrl] = useState(null);
@@ -161,22 +161,26 @@ export default function InventoryTable({ items, onInteract, onDelete, onMove }) 
                                                 >
                                                     + Add
                                                 </button>
-                                                <button
-                                                    className="btn btn-secondary"
-                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                                                    onClick={() => onInteract(item, 'OUT')}
-                                                    disabled={item.total_qty === 0}
-                                                >
-                                                    - Use
-                                                </button>
-                                                <button
-                                                    className="btn btn-secondary"
-                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}
-                                                    onClick={() => onMove(item)}
-                                                    title="Move Location"
-                                                >
-                                                    ↔️
-                                                </button>
+                                                {viewType !== 'assets' && (
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                                        onClick={() => onInteract(item, 'OUT')}
+                                                        disabled={item.total_qty === 0}
+                                                    >
+                                                        - Use
+                                                    </button>
+                                                )}
+                                                {viewType === 'assets' && (
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}
+                                                        onClick={() => onMove(item)}
+                                                        title="Move Location"
+                                                    >
+                                                        ↔️
+                                                    </button>
+                                                )}
                                                 <button
                                                     className="btn"
                                                     style={{

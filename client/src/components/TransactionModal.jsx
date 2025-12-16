@@ -29,6 +29,8 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                 project_ref: '',
                 notes: ''
             }));
+            // Assuming item type might be part of the item data if editing, otherwise default
+            setItemType(item.item_type || 'consumable');
         } else {
             // Reset for new item add
             setFormData({
@@ -42,6 +44,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                 footprint: '',
                 datasheet_url: ''
             });
+            setItemType('consumable'); // Reset item type for new item
         }
         setImageFile(null); // Reset image
         setShowCategoryDropdown(false);
@@ -64,6 +67,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
             data.append('project_ref', formData.project_ref);
             data.append('notes', formData.notes);
             data.append('datasheet_url', formData.datasheet_url);
+            data.append('item_type', itemType); // Add item_type to FormData
             if (item) data.append('item_id', item.id);
             if (imageFile) {
                 data.append('image', imageFile);
@@ -99,6 +103,21 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
                 </div>
 
                 <form onSubmit={handleSubmit}>
+                    {isNewItem && (
+                        <div className="form-group">
+                            <label className="label">Item Type</label>
+                            <select
+                                className="input" // Using 'input' class for styling consistency, or create a 'select' class
+                                value={itemType}
+                                onChange={(e) => setItemType(e.target.value)}
+                                required
+                            >
+                                <option value="consumable">Consumable (Sparepart/Habis Pakai)</option>
+                                <option value="asset">Active Asset (Alat Kerja/Barang Inventaris)</option>
+                            </select>
+                        </div>
+                    )}
+
                     {isNewItem && (
                         <div className="form-group">
                             <label className="label">Component Name</label>

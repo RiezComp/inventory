@@ -167,9 +167,10 @@ app.get('/api/inventory', authMiddleware, (req, res) => {
 
 // Add stock (IN) - Create item if not exists or update qty. Handles Image Upload.
 app.post('/api/inventory/in', authMiddleware, upload.single('image'), (req, res) => {
-    const { name, part_number, category, footprint, qty, location, project_ref, notes, datasheet_url } = req.body;
+    const { name, part_number, category, footprint, qty, location, project_ref, notes, datasheet_url, item_type } = req.body;
     const image_path = req.file ? `/uploads/${req.file.filename}` : null;
     const user_id = req.user.id;
+    const type = item_type || 'consumable'; // Default to consumable
 
     if (!name || !qty) {
         return res.status(400).json({ error: 'Name and Qty are required' });
@@ -184,8 +185,8 @@ app.post('/api/inventory/in', authMiddleware, upload.single('image'), (req, res)
 
         if (row) {
             // Update existing item
-            let sql = 'UPDATE items SET total_qty = ?, location = COALESCE(?, location)';
-            let params = [row.total_qty + quantity, location];
+            let sql = 'UPDATE items SET total_qty = ?, location = COALESCE(?, location), item_type = COALESCE(?, item_type)';
+            let params = [row.total_qty + quantity, location, type];
 
             if (image_path) {
                 sql += ', image_path = ?';
@@ -219,8 +220,8 @@ app.post('/api/inventory/in', authMiddleware, upload.single('image'), (req, res)
             });
         } else {
             // Create new item
-            db.run('INSERT INTO items (name, part_number, category, footprint, total_qty, location, notes, image_path, datasheet_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [name, part_number, category, footprint, quantity, location, notes, image_path, datasheet_url],
+            db.run('INSERT INTO items (name, part_number, category, footprint, total_qty, location, notes, image_path, datasheet_url, item_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [name, part_number, category, footprint, quantity, location, notes, image_path, datasheet_url, type],
                 function (err) {
                     if (err) return res.status(500).json({ error: err.message });
                     const newItemId = this.lastID;
