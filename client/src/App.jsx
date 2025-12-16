@@ -227,10 +227,11 @@ function AppContent() {
                     <>
                         <DashboardStats items={items} />
                         <InventoryTable
-                            items={items.filter(i => {
+                            items={Array.isArray(items) ? items.filter(i => {
+                                if (!i) return false;
                                 const isAsset = i.item_type === 'asset';
                                 return currentView === 'assets' ? isAsset : !isAsset;
-                            })}
+                            }) : []}
                             onInteract={handleInteract}
                             onDelete={handleDelete}
                             onMove={handleMove}

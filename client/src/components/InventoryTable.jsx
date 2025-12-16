@@ -9,15 +9,17 @@ export default function InventoryTable({ items, onInteract, onDelete, onMove, vi
 
     // Extract unique categories for filter
     const categories = useMemo(() => {
-        const cats = new Set(items.map(i => i.category).filter(Boolean));
+        if (!Array.isArray(items)) return [];
+        const cats = new Set(items.map(i => i?.category).filter(Boolean));
         return Array.from(cats).sort();
     }, [items]);
 
-    const filteredItems = items.filter(item => {
+    const filteredItems = (Array.isArray(items) ? items : []).filter(item => {
+        if (!item) return false;
         const matchesSearch =
-            item.name.toLowerCase().includes(search.toLowerCase()) ||
-            item.category?.toLowerCase().includes(search.toLowerCase()) ||
-            item.location?.toLowerCase().includes(search.toLowerCase());
+            (item.name || '').toLowerCase().includes(search.toLowerCase()) ||
+            (item.category || '').toLowerCase().includes(search.toLowerCase()) ||
+            (item.location || '').toLowerCase().includes(search.toLowerCase());
 
         const matchesCategory = categoryFilter ? item.category === categoryFilter : true;
 
