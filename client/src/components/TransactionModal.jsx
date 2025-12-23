@@ -69,6 +69,7 @@ export default function TransactionModal({ isOpen, onClose, type, item, onSubmit
             data.append('notes', formData.notes);
             data.append('datasheet_url', formData.datasheet_url);
             data.append('item_type', itemType); // Add item_type to FormData
+            data.append('is_new', isNewItem); // Flag for duplication check
             if (item) data.append('item_id', item.id);
             if (imageFile) {
                 data.append('image', imageFile);
