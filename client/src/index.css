@@ -199,6 +199,9 @@ a:hover {
 /* Table */
 .table-container {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+  /* Adjust based on header height */
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
@@ -210,12 +213,17 @@ table {
 }
 
 th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background-color: var(--bg-input);
   padding: 0.75rem 1rem;
   font-size: 0.75rem;
   text-transform: uppercase;
   color: var(--text-secondary);
   font-weight: 600;
+  box-shadow: 0 1px 0 var(--border);
+  /* Optional: distinct separator */
 }
 
 td {
