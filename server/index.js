@@ -648,78 +648,35 @@ app.post('/api/boms', authMiddleware, (req, res) => {
 
     if (!name) return res.status(400).json({ error: 'BOM name is required' });
 
-    db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
+    // Check if BOM with same name exists
+    db.get('SELECT id FROM boms WHERE name = ?', [name], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (row) {
+            return res.status(409).json({ error: 'A BOM with this name already exists' });
+        }
 
-        db.run(
-            'INSERT INTO boms (name, description, created_by) VALUES (?, ?, ?)',
-            [name, description, req.user.id],
-            function (err) {
-                if (err) {
-                    db.run('ROLLBACK');
-                    return res.status(500).json({ error: err.message });
-                }
+        db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
 
-                const bomId = this.lastID;
-
-                if (!items || items.length === 0) {
-                    db.run('COMMIT');
-                    return res.json({ message: 'BOM created (empty)', id: bomId });
-                }
-
-                const stmt = db.prepare('INSERT INTO bom_items (bom_id, item_id, qty) VALUES (?, ?, ?)');
-                items.forEach(item => {
-                    stmt.run(bomId, item.item_id, item.qty);
-                });
-                stmt.finalize(err => {
+            db.run(
+                'INSERT INTO boms (name, description, created_by) VALUES (?, ?, ?)',
+                [name, description, req.user.id],
+                function (err) {
                     if (err) {
                         db.run('ROLLBACK');
                         return res.status(500).json({ error: err.message });
                     }
-                    db.run('COMMIT');
-                    res.json({ message: 'BOM created successfully', id: bomId });
-                });
-            }
-        );
-    });
-});
 
-// Update BOM
-app.put('/api/boms/:id', authMiddleware, (req, res) => {
-    const { id } = req.params;
-    const { name, description, items } = req.body;
-
-    if (!name) return res.status(400).json({ error: 'BOM name is required' });
-
-    db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
-
-        // Update BOM details
-        db.run(
-            'UPDATE boms SET name = ?, description = ? WHERE id = ?',
-            [name, description, id],
-            function (err) {
-                if (err) {
-                    db.run('ROLLBACK');
-                    return res.status(500).json({ error: err.message });
-                }
-
-                // Delete existing items
-                db.run('DELETE FROM bom_items WHERE bom_id = ?', [id], err => {
-                    if (err) {
-                        db.run('ROLLBACK');
-                        return res.status(500).json({ error: err.message });
-                    }
+                    const bomId = this.lastID;
 
                     if (!items || items.length === 0) {
                         db.run('COMMIT');
-                        return res.json({ message: 'BOM updated (items cleared)' });
+                        return res.json({ message: 'BOM created (empty)', id: bomId });
                     }
 
-                    // Insert new items
                     const stmt = db.prepare('INSERT INTO bom_items (bom_id, item_id, qty) VALUES (?, ?, ?)');
                     items.forEach(item => {
-                        stmt.run(id, item.item_id, item.qty);
+                        stmt.run(bomId, item.item_id, item.qty);
                     });
                     stmt.finalize(err => {
                         if (err) {
@@ -727,140 +684,190 @@ app.put('/api/boms/:id', authMiddleware, (req, res) => {
                             return res.status(500).json({ error: err.message });
                         }
                         db.run('COMMIT');
-                        res.json({ message: 'BOM updated successfully' });
+                        res.json({ message: 'BOM created successfully', id: bomId });
                     });
-                });
-            }
-        );
-    });
-});
-
-// Get BOM details (with items)
-app.get('/api/boms/:id', authMiddleware, (req, res) => {
-    const { id } = req.params;
-    db.get('SELECT * FROM boms WHERE id = ?', [id], (err, bom) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!bom) return res.status(404).json({ error: 'BOM not found' });
-
-        db.all(
-            `SELECT bi.*, i.name, i.part_number, i.category, i.total_qty as current_stock 
-             FROM bom_items bi 
-             JOIN items i ON bi.item_id = i.id 
-             WHERE bi.bom_id = ?`,
-            [id],
-            (err, items) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ message: 'success', data: { ...bom, items } });
-            }
-        );
-    });
-});
-
-// Delete BOM
-app.delete('/api/boms/:id', authMiddleware, (req, res) => {
-    db.run('DELETE FROM boms WHERE id = ?', [req.params.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'BOM deleted' });
-    });
-});
-
-// Execute BOM (Deduct stock)
-app.post('/api/boms/:id/execute', authMiddleware, (req, res) => {
-    const { id } = req.params;
-    const { project_name, multiplier = 1 } = req.body;
-    const userId = req.user.id; // Corrected from req.user.userId based on authMiddleware
-
-    if (!project_name) return res.status(400).json({ error: 'Project name is required' });
-
-    // 1. Get BOM items
-    db.all('SELECT * FROM bom_items WHERE bom_id = ?', [id], (err, bomItems) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (bomItems.length === 0) return res.status(400).json({ error: 'BOM has no items' });
-
-        // 2. Check stock
-        // We need to check all items stock first. 
-        // A complex query or iterating. Let's iterate with a Promise.all approach or serialize.
-        // Since sqlite3 is callback based, let's use serialize + checks.
-
-        // Actually, let's just do it inside a transaction. 
-        // If stock goes negative, checking beforehand is better for UX.
-
-        const timestamp = new Date().toISOString();
-        const required = bomItems.map(bi => ({ ...bi, required_qty: bi.qty * multiplier }));
-        const itemIds = required.map(r => r.item_id);
-
-        db.all(`SELECT id, total_qty, name FROM items WHERE id IN (${itemIds.join(',')})`, [], (err, stockItems) => {
-            if (err) return res.status(500).json({ error: err.message });
-
-            // Map for quick lookup
-            const stockMap = {};
-            stockItems.forEach(si => stockMap[si.id] = si);
-
-            const missing = [];
-            required.forEach(reqItem => {
-                const stockItem = stockMap[reqItem.item_id];
-                if (!stockItem || stockItem.total_qty < reqItem.required_qty) {
-                    missing.push(`${stockItem ? stockItem.name : 'Unknown Item'} (Need ${reqItem.required_qty}, Have ${stockItem ? stockItem.total_qty : 0})`);
                 }
-            });
+            );
+        });
+    });
 
-            if (missing.length > 0) {
-                return res.status(400).json({ error: 'Insufficient stock: ' + missing.join(', ') });
-            }
+    // Update BOM
+    app.put('/api/boms/:id', authMiddleware, (req, res) => {
+        const { id } = req.params;
+        const { name, description, items } = req.body;
 
-            // 3. Deduct and Log
-            db.serialize(() => {
-                db.run('BEGIN TRANSACTION');
-                let errorOccurred = false;
+        if (!name) return res.status(400).json({ error: 'BOM name is required' });
 
-                const stmtUpdate = db.prepare('UPDATE items SET total_qty = total_qty - ? WHERE id = ?');
-                const stmtLog = db.prepare('INSERT INTO transactions (item_id, user_id, type, qty, project_ref, timestamp, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
 
-                // We need to fetch BOM name for logs
-                db.get('SELECT name FROM boms WHERE id = ?', [id], (err, bom) => {
-                    if (err) { // Should not happen usually if we got here
+            // Update BOM details
+            db.run(
+                'UPDATE boms SET name = ?, description = ? WHERE id = ?',
+                [name, description, id],
+                function (err) {
+                    if (err) {
                         db.run('ROLLBACK');
                         return res.status(500).json({ error: err.message });
                     }
-                    const bomName = bom ? bom.name : 'Unknown BOM';
 
-                    required.forEach(item => {
-                        stmtUpdate.run(item.required_qty, item.item_id);
-                        stmtLog.run(
-                            item.item_id,
-                            userId,
-                            'OUT',
-                            item.required_qty,
-                            project_name,
-                            timestamp,
-                            `BOM Execution: ${bomName} (x${multiplier})`
-                        );
-                    });
-
-                    stmtUpdate.finalize();
-                    stmtLog.finalize(err => {
+                    // Delete existing items
+                    db.run('DELETE FROM bom_items WHERE bom_id = ?', [id], err => {
                         if (err) {
                             db.run('ROLLBACK');
                             return res.status(500).json({ error: err.message });
                         }
-                        db.run('COMMIT');
-                        res.json({ message: 'BOM executed successfully' });
+
+                        if (!items || items.length === 0) {
+                            db.run('COMMIT');
+                            return res.json({ message: 'BOM updated (items cleared)' });
+                        }
+
+                        // Insert new items
+                        const stmt = db.prepare('INSERT INTO bom_items (bom_id, item_id, qty) VALUES (?, ?, ?)');
+                        items.forEach(item => {
+                            stmt.run(id, item.item_id, item.qty);
+                        });
+                        stmt.finalize(err => {
+                            if (err) {
+                                db.run('ROLLBACK');
+                                return res.status(500).json({ error: err.message });
+                            }
+                            db.run('COMMIT');
+                            res.json({ message: 'BOM updated successfully' });
+                        });
+                    });
+                }
+            );
+        });
+    });
+
+    // Get BOM details (with items)
+    app.get('/api/boms/:id', authMiddleware, (req, res) => {
+        const { id } = req.params;
+        db.get('SELECT * FROM boms WHERE id = ?', [id], (err, bom) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!bom) return res.status(404).json({ error: 'BOM not found' });
+
+            db.all(
+                `SELECT bi.*, i.name, i.part_number, i.category, i.total_qty as current_stock 
+             FROM bom_items bi 
+             JOIN items i ON bi.item_id = i.id 
+             WHERE bi.bom_id = ?`,
+                [id],
+                (err, items) => {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ message: 'success', data: { ...bom, items } });
+                }
+            );
+        });
+    });
+
+    // Delete BOM
+    app.delete('/api/boms/:id', authMiddleware, (req, res) => {
+        db.run('DELETE FROM boms WHERE id = ?', [req.params.id], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'BOM deleted' });
+        });
+    });
+
+    // Execute BOM (Deduct stock)
+    app.post('/api/boms/:id/execute', authMiddleware, (req, res) => {
+        const { id } = req.params;
+        const { project_name, multiplier = 1 } = req.body;
+        const userId = req.user.id; // Corrected from req.user.userId based on authMiddleware
+
+        if (!project_name) return res.status(400).json({ error: 'Project name is required' });
+
+        // 1. Get BOM items
+        db.all('SELECT * FROM bom_items WHERE bom_id = ?', [id], (err, bomItems) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (bomItems.length === 0) return res.status(400).json({ error: 'BOM has no items' });
+
+            // 2. Check stock
+            // We need to check all items stock first. 
+            // A complex query or iterating. Let's iterate with a Promise.all approach or serialize.
+            // Since sqlite3 is callback based, let's use serialize + checks.
+
+            // Actually, let's just do it inside a transaction. 
+            // If stock goes negative, checking beforehand is better for UX.
+
+            const timestamp = new Date().toISOString();
+            const required = bomItems.map(bi => ({ ...bi, required_qty: bi.qty * multiplier }));
+            const itemIds = required.map(r => r.item_id);
+
+            db.all(`SELECT id, total_qty, name FROM items WHERE id IN (${itemIds.join(',')})`, [], (err, stockItems) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                // Map for quick lookup
+                const stockMap = {};
+                stockItems.forEach(si => stockMap[si.id] = si);
+
+                const missing = [];
+                required.forEach(reqItem => {
+                    const stockItem = stockMap[reqItem.item_id];
+                    if (!stockItem || stockItem.total_qty < reqItem.required_qty) {
+                        missing.push(`${stockItem ? stockItem.name : 'Unknown Item'} (Need ${reqItem.required_qty}, Have ${stockItem ? stockItem.total_qty : 0})`);
+                    }
+                });
+
+                if (missing.length > 0) {
+                    return res.status(400).json({ error: 'Insufficient stock: ' + missing.join(', ') });
+                }
+
+                // 3. Deduct and Log
+                db.serialize(() => {
+                    db.run('BEGIN TRANSACTION');
+                    let errorOccurred = false;
+
+                    const stmtUpdate = db.prepare('UPDATE items SET total_qty = total_qty - ? WHERE id = ?');
+                    const stmtLog = db.prepare('INSERT INTO transactions (item_id, user_id, type, qty, project_ref, timestamp, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
+
+                    // We need to fetch BOM name for logs
+                    db.get('SELECT name FROM boms WHERE id = ?', [id], (err, bom) => {
+                        if (err) { // Should not happen usually if we got here
+                            db.run('ROLLBACK');
+                            return res.status(500).json({ error: err.message });
+                        }
+                        const bomName = bom ? bom.name : 'Unknown BOM';
+
+                        required.forEach(item => {
+                            stmtUpdate.run(item.required_qty, item.item_id);
+                            stmtLog.run(
+                                item.item_id,
+                                userId,
+                                'OUT',
+                                item.required_qty,
+                                project_name,
+                                timestamp,
+                                `BOM Execution: ${bomName} (x${multiplier})`
+                            );
+                        });
+
+                        stmtUpdate.finalize();
+                        stmtLog.finalize(err => {
+                            if (err) {
+                                db.run('ROLLBACK');
+                                return res.status(500).json({ error: err.message });
+                            }
+                            db.run('COMMIT');
+                            res.json({ message: 'BOM executed successfully' });
+                        });
                     });
                 });
             });
         });
     });
-});
 
-// Serve static files from React app (Production)
-app.use(express.static(path.join(__dirname, '../client/dist')));
+    // Serve static files from React app (Production)
+    app.use(express.static(path.join(__dirname, '../client/dist')));
 
-// Handle SPA routing - return index.html for any unknown route
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-});
+    // Handle SPA routing - return index.html for any unknown route
+    app.get(/.*/, (req, res) => {
+        res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+    });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-});
+    // Start server
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on http://0.0.0.0:${PORT}`);
+    });

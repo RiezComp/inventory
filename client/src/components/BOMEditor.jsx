@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
 
-export default function BOMEditor({ onCancel, onSuccess }) {
+export default function BOMEditor({ onCancel, onSuccess, initialData = null }) {
     const { token } = useAuth();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [bomItems, setBomItems] = useState([]); // Array of { item_id, qty, temp_id }
+    const [bomItems, setBomItems] = useState([]); // Array of { item_id, qty, temp_id, name, part_number }
 
     // Inventory selection state
     const [inventory, setInventory] = useState([]);
@@ -24,6 +24,40 @@ export default function BOMEditor({ onCancel, onSuccess }) {
             })
             .catch(console.error);
     }, [token]);
+
+    // Load initial data for editing
+    useEffect(() => {
+        if (initialData) {
+            setName(initialData.name);
+            setDescription(initialData.description || '');
+
+            // If items are already populated (joined)
+            if (initialData.items) {
+                setBomItems(initialData.items.map(i => ({
+                    item_id: i.item_id,
+                    qty: i.qty,
+                    name: i.name,
+                    part_number: i.part_number,
+                    temp_id: Date.now() + Math.random()
+                })));
+            } else {
+                // Fetch items if needed
+                fetch(`/api/boms/${initialData.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.data && data.data.items) {
+                            setBomItems(data.data.items.map(i => ({
+                                item_id: i.item_id,
+                                qty: i.qty,
+                                name: i.name,
+                                part_number: i.part_number,
+                                temp_id: Date.now() + Math.random()
+                            })));
+                        }
+                    });
+            }
+        }
+    }, [initialData, token]);
 
     const filteredInventory = useMemo(() => {
         if (!search) return inventory.slice(0, 50);
@@ -67,8 +101,11 @@ export default function BOMEditor({ onCancel, onSuccess }) {
         if (bomItems.length === 0) return alert("Add at least one item");
 
         try {
-            const res = await fetch('/api/boms', {
-                method: 'POST',
+            const url = initialData ? `/api/boms/${initialData.id}` : '/api/boms';
+            const method = initialData ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -93,7 +130,9 @@ export default function BOMEditor({ onCancel, onSuccess }) {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title" style={{ color: 'var(--text-primary)' }}>Create New BOM Template</h3>
+                <h3 className="card-title" style={{ color: 'var(--text-primary)' }}>
+                    {initialData ? 'Edit BOM Template' : 'Create New BOM Template'}
+                </h3>
             </div>
 
             <div className="form-group">
@@ -192,7 +231,9 @@ export default function BOMEditor({ onCancel, onSuccess }) {
             </div>
 
             <div className="flex gap-4">
-                <button className="btn btn-primary" onClick={handleSave}>Save BOM Template</button>
+                <button className="btn btn-primary" onClick={handleSave}>
+                    {initialData ? 'Update BOM' : 'Save BOM Template'}
+                </button>
                 <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
             </div>
         </div>

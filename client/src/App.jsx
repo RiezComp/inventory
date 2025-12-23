@@ -273,17 +273,27 @@ function AppContent() {
             ) : currentView === 'bom' ? (
                 bomEditorOpen ? (
                     <BOMEditor
-                        onCancel={() => setBomEditorOpen(false)}
+                        onCancel={() => {
+                            setBomEditorOpen(false);
+                            setSelectedBOM(null);
+                        }}
                         onSuccess={() => {
                             setBomEditorOpen(false);
-                            // Force refresh? The List component fetches on mount, giving key prop change or just remounting works.
-                            // Actually BOMList fetches on mount. When switching back from editor, BOMList remounts.
+                            setSelectedBOM(null);
                         }}
+                        initialData={selectedBOM}
                     />
                 ) : (
                     <BOMList
-                        onCreate={() => setBomEditorOpen(true)}
+                        onCreate={() => {
+                            setSelectedBOM(null);
+                            setBomEditorOpen(true);
+                        }}
                         onSelect={(bom) => setSelectedBOM(bom)}
+                        onEdit={(bom) => {
+                            setSelectedBOM(bom);
+                            setBomEditorOpen(true);
+                        }}
                     />
                 )
             ) : (
