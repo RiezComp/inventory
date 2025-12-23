@@ -684,6 +684,57 @@ app.post('/api/boms', authMiddleware, (req, res) => {
     });
 });
 
+// Update BOM
+app.put('/api/boms/:id', authMiddleware, (req, res) => {
+    const { id } = req.params;
+    const { name, description, items } = req.body;
+
+    if (!name) return res.status(400).json({ error: 'BOM name is required' });
+
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+
+        // Update BOM details
+        db.run(
+            'UPDATE boms SET name = ?, description = ? WHERE id = ?',
+            [name, description, id],
+            function (err) {
+                if (err) {
+                    db.run('ROLLBACK');
+                    return res.status(500).json({ error: err.message });
+                }
+
+                // Delete existing items
+                db.run('DELETE FROM bom_items WHERE bom_id = ?', [id], err => {
+                    if (err) {
+                        db.run('ROLLBACK');
+                        return res.status(500).json({ error: err.message });
+                    }
+
+                    if (!items || items.length === 0) {
+                        db.run('COMMIT');
+                        return res.json({ message: 'BOM updated (items cleared)' });
+                    }
+
+                    // Insert new items
+                    const stmt = db.prepare('INSERT INTO bom_items (bom_id, item_id, qty) VALUES (?, ?, ?)');
+                    items.forEach(item => {
+                        stmt.run(id, item.item_id, item.qty);
+                    });
+                    stmt.finalize(err => {
+                        if (err) {
+                            db.run('ROLLBACK');
+                            return res.status(500).json({ error: err.message });
+                        }
+                        db.run('COMMIT');
+                        res.json({ message: 'BOM updated successfully' });
+                    });
+                });
+            }
+        );
+    });
+});
+
 // Get BOM details (with items)
 app.get('/api/boms/:id', authMiddleware, (req, res) => {
     const { id } = req.params;
