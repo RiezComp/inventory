@@ -166,8 +166,9 @@ app.get('/api/inventory', authMiddleware, (req, res) => {
 });
 
 // Add stock (IN) - Create item if not exists or update qty. Handles Image Upload.
+// Add stock (IN) - Create item if not exists or update qty. Handles Image Upload.
 app.post('/api/inventory/in', authMiddleware, upload.single('image'), (req, res) => {
-    const { name, part_number, category, footprint, qty, location, project_ref, notes, datasheet_url, item_type } = req.body;
+    const { name, part_number, category, footprint, qty, location, project_ref, notes, datasheet_url, item_type, is_new } = req.body;
     const image_path = req.file ? `/uploads/${req.file.filename}` : null;
     const user_id = req.user.id;
     const type = item_type || 'consumable'; // Default to consumable
@@ -176,14 +177,32 @@ app.post('/api/inventory/in', authMiddleware, upload.single('image'), (req, res)
         return res.status(400).json({ error: 'Name and Qty are required' });
     }
 
-    // Check if item exists
-    db.get('SELECT * FROM items WHERE name = ?', [name], (err, row) => {
+    // Check if item exists (Strict check: Name AND Footprint must match)
+    // If footprint is provided, we match it. If not, we match where footprint is null or empty? 
+    // Standardizing: Empty string footprint matches empty string.
+
+    // Logic: 
+    // If client sends is_new='true', we expect NO match. If match -> 409.
+
+    // We need to handle potential null footprint in DB vs empty string (or vice versa). 
+    // Best effort: checking name and footprint.
+
+    const targetFootprint = footprint || '';
+
+    db.get('SELECT * FROM items WHERE name = ? AND (footprint = ? OR (footprint IS NULL AND ? = ""))', [name, targetFootprint, targetFootprint], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const timestamp = new Date().toISOString();
         const quantity = parseInt(qty);
 
         if (row) {
+            // MATCH FOUND
+
+            // If user intended to create NEW item (is_new flag string "true"), deny it.
+            if (is_new === 'true' || is_new === true) {
+                return res.status(409).json({ error: `Item "${name}" with footprint "${targetFootprint}" already exists. Please use 'Restock' instead.` });
+            }
+
             // Update existing item
             let sql = 'UPDATE items SET total_qty = ?, location = COALESCE(?, location), item_type = COALESCE(?, item_type)';
             let params = [row.total_qty + quantity, location, type];
@@ -197,10 +216,9 @@ app.post('/api/inventory/in', authMiddleware, upload.single('image'), (req, res)
                 sql += ', part_number = ?';
                 params.push(part_number);
             }
-            if (footprint) {
-                sql += ', footprint = ?';
-                params.push(footprint);
-            }
+            // We update other fields too if provided, but footprint is part of identity now so we keeping it same usually.
+            // But if user edits existing item? This is IN transaction, not EDIT.
+
             if (datasheet_url) {
                 sql += ', datasheet_url = ?';
                 params.push(datasheet_url);
@@ -219,7 +237,7 @@ app.post('/api/inventory/in', authMiddleware, upload.single('image'), (req, res)
                 res.json({ message: 'Stock updated', itemId: row.id, newQty: row.total_qty + quantity });
             });
         } else {
-            // Create new item
+            // NO MATCH - Create new item
             db.run('INSERT INTO items (name, part_number, category, footprint, total_qty, location, notes, image_path, datasheet_url, item_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [name, part_number, category, footprint, quantity, location, notes, image_path, datasheet_url, type],
                 function (err) {
