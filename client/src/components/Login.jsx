@@ -32,7 +32,7 @@ export default function Login() {
         }}>
             <div className="card" style={{ width: '100%', maxWidth: '400px', margin: '1rem' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Inventory System</h1>
+                    <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>R&D Inventory System</h1>
                     <p className="text-muted">Login to continue</p>
                 </div>
 
