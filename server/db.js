@@ -141,6 +141,25 @@ db.serialize(() => {
     FOREIGN KEY (item_id) REFERENCES items (id)
   )`);
 
+  // Bill of Materials (BOM) tables
+  db.run(`CREATE TABLE IF NOT EXISTS boms (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_by INTEGER,
+    FOREIGN KEY (created_by) REFERENCES users (id)
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS bom_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bom_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    qty INTEGER NOT NULL,
+    FOREIGN KEY (bom_id) REFERENCES boms (id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES items (id)
+  )`);
+
   // Create default admin user if not exists
   db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
     if (!row) {

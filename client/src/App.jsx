@@ -12,6 +12,9 @@ import ServiceDetail from './components/ServiceDetail';
 import ServiceInvoice from './components/ServiceInvoice';
 import PasswordConfirmModal from './components/PasswordConfirmModal';
 import MoveModal from './components/MoveModal';
+import BOMList from './components/BOMList';
+import BOMEditor from './components/BOMEditor';
+import BOMExecutionModal from './components/BOMExecutionModal';
 
 const API_Base = '/api';
 
@@ -22,7 +25,7 @@ function AppContent() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalType, setModalType] = useState('IN');
     const [selectedItem, setSelectedItem] = useState(null);
-    const [currentView, setCurrentView] = useState('inventory'); // 'inventory' | 'history' | 'users' | 'service'
+    const [currentView, setCurrentView] = useState('inventory'); // 'inventory' | 'history' | 'users' | 'service' | 'bom'
     const [serviceModalOpen, setServiceModalOpen] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
     const [serviceDetailOpen, setServiceDetailOpen] = useState(false);
@@ -33,6 +36,10 @@ function AppContent() {
     const [itemToDelete, setItemToDelete] = useState(null);
     const [moveModalOpen, setMoveModalOpen] = useState(false);
     const [itemToMove, setItemToMove] = useState(null);
+
+    // BOM State
+    const [bomEditorOpen, setBomEditorOpen] = useState(false);
+    const [selectedBOM, setSelectedBOM] = useState(null); // For execution
 
     const fetchInventory = async () => {
         if (!token) return;
@@ -202,6 +209,13 @@ function AppContent() {
                     >
                         Service
                     </button>
+                    <button
+                        className={`btn ${currentView === 'bom' ? 'btn-secondary' : 'btn-ghost'}`}
+                        style={{ backgroundColor: currentView === 'bom' ? 'var(--bg-input)' : 'transparent' }}
+                        onClick={() => setCurrentView('bom')}
+                    >
+                        Projects / BOM
+                    </button>
                     {user.role === 'admin' && (
                         <button
                             className={`btn ${currentView === 'users' ? 'btn-secondary' : 'btn-ghost'}`}
@@ -256,6 +270,22 @@ function AppContent() {
                         setInvoiceOpen(true);
                     }}
                 />
+            ) : currentView === 'bom' ? (
+                bomEditorOpen ? (
+                    <BOMEditor
+                        onCancel={() => setBomEditorOpen(false)}
+                        onSuccess={() => {
+                            setBomEditorOpen(false);
+                            // Force refresh? The List component fetches on mount, giving key prop change or just remounting works.
+                            // Actually BOMList fetches on mount. When switching back from editor, BOMList remounts.
+                        }}
+                    />
+                ) : (
+                    <BOMList
+                        onCreate={() => setBomEditorOpen(true)}
+                        onSelect={(bom) => setSelectedBOM(bom)}
+                    />
+                )
             ) : (
                 <UserManagement />
             )}
@@ -329,6 +359,16 @@ function AppContent() {
                 }}
                 item={itemToMove}
                 onSubmit={handleMoveSubmit}
+            />
+
+            <BOMExecutionModal
+                bom={selectedBOM}
+                onClose={() => setSelectedBOM(null)}
+                onSuccess={() => {
+                    setSelectedBOM(null);
+                    fetchInventory(); // Refresh stock
+                    setCurrentView('history'); // Optional: switch to history
+                }}
             />
         </div>
     );
